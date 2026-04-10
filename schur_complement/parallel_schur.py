@@ -1,7 +1,7 @@
 import numpy as np
 from mpi4py import MPI
 
-def parallel_schur(A, block1_size, block2_size):
+def parallel_schur(A, block1_size, block2_size, comm, rank, size):
     
     A11 = A[:block1_size, :block1_size]
     A12 = A[:block1_size, block2_size:]
@@ -55,8 +55,9 @@ def main():
         block2_size = N - block1_size
         A = np.random.rand(N, N)
 
-        S = parallel_schur(A, block1_size, block2_size)
+    S = parallel_schur(A, block1_size, block2_size, comm, rank, size)
 
+    if rank == 0:
         print("parallel Schur complement:\n", S)
 
 if __name__ == "__main__":
