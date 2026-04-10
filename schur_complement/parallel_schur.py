@@ -31,7 +31,7 @@ def parallel_schur(A, block1_size, block2_size, comm, rank, size):
     if rank == 0:
         global_result = np.zeros((A21.shape[0], A21.shape[1]))
 
-    global_result = comm.Gather(local_result, root=0)
+    global_result = comm.Gather(local_result, global_result, root=0)
 
     if rank == 0:
         global_S = A22 - global_result # should be cheap enough
