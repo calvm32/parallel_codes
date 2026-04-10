@@ -49,11 +49,14 @@ def main():
 
     # test random matrix w size N
     A = None
+    N = 6
+    block1_size = 3
+    block2_size = N - block1_size
+
+    # make the matrix and broadcast it to all processors
     if rank == 0:
-        N = 6
-        block1_size = 3
-        block2_size = N - block1_size
         A = np.random.rand(N, N)
+    A = comm.bcast(A, root=0) 
 
     S = parallel_schur(A, block1_size, block2_size, comm, rank, size)
 
