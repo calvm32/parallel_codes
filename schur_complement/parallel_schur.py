@@ -23,7 +23,7 @@ def parallel_schur(A, block1_size, block2_size, comm, rank, size):
 
     for row in range(start_row, end_row + 1):
         # calculate A21 * A11_inv * A12
-        column = A21[start_row + row]*A11_inv*A12
+        column = A21[row]*A11_inv*A12
         local_result.append(column)
 
     # make placeholder for global result
