@@ -1,6 +1,7 @@
 import numpy as np
 from mpi4py import MPI
 from numpy.linalg import solve
+from math import ceil
 
 def parallel_schur(A, block1_size, block2_size, comm, rank, size):
     
@@ -11,18 +12,17 @@ def parallel_schur(A, block1_size, block2_size, comm, rank, size):
     
     # Schur complement S = A22 - A21*inv(A11)*A12
     X = solve(A11, A12)
-    rows_per_proc = A21.shape[0] // size # split up rows of A21 ?
-    columns = []
 
-    # divide up into rows
-    start_row = rank*rows_per_proc #?? unclear
-    end_row = min((rank+1)* rows_per_proc, A21.shape[0])
+    # rows for this process
+    rows_per_proc = ceil(A21.shape[0] / size)
+    start_row = rank * rows_per_proc
+    end_row = min(start_row + rows_per_proc, A21.shape[0])
     local_result = A21[start_row:end_row] @ X
     local_result_flat = local_result.flatten()
     local_count = len(local_result_flat)
 
-    # Gather counts and displacements
-    counts = comm.gather(local_count, root=0)  # number of elements each rank will send
+    # gather counts for Gatherv
+    counts = comm.gather(local_count, root=0)
 
     if rank == 0:
         displacements = np.insert(np.cumsum(counts[:-1]), 0, 0)
@@ -31,8 +31,9 @@ def parallel_schur(A, block1_size, block2_size, comm, rank, size):
         displacements = None
         global_result_flat = None
 
-    # Use Gatherv for variable-length data
-    comm.Gatherv(sendbuf=local_result_flat, recvbuf=(global_result_flat, counts, displacements, MPI.DOUBLE), root=0)
+    comm.Gatherv(sendbuf=local_result_flat,
+                 recvbuf=(global_result_flat, counts, displacements, MPI.DOUBLE),
+                 root=0)
 
     if rank == 0:
         global_result = global_result_flat.reshape(A21.shape[0], A12.shape[1])
