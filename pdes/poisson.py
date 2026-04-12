@@ -29,7 +29,7 @@ def serial_poisson(Lx, Ly, Nx, Ny, f):
     x = np.linspace(0, Lx, Nx)
     y = np.linspace(0, Ly, Ny)
 
-    create_laplacian_matrix(Nx, Ny, hx, hy)
+    A = create_laplacian_matrix(Nx, Ny, hx, hy)
 
     # ----------------
     # solve the system
