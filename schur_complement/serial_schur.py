@@ -8,8 +8,8 @@ def serial_schur(A, block1_size, block2_size):
     A22 = A[block2_size:, block2_size:]
     
     # Schur complement S = A22 - A21*inv(A11)*A12
-    A11_inv = np.linalg.inv(A11)
-    S = A22 - A21 @ A11_inv @ A12
+    X = solve(A11, A12)
+    S = A22 - A21 @ X
 
     return S
 
