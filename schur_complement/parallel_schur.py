@@ -36,9 +36,7 @@ def parallel_schur(A, block1_size, block2_size, comm, rank, size):
 
     if rank == 0:
         global_result = global_result_flat.reshape(A21.shape[0], A12.shape[1])
-
-    if rank == 0:
-        global_S = A22 - global_result # should be cheap enough
+        global_S = A22 - global_result
         return global_S
     else:
         return None
