@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpi4py import MPI
-from .schur_complement import *
+from schur_complement import *
 
 # set up laplacian matrix
 def create_laplacian_matrix(Nx, Ny, hx, hy):
@@ -21,7 +21,7 @@ def create_laplacian_matrix(Nx, Ny, hx, hy):
 
 def serial_poisson(Lx, Ly, Nx, Ny, f):
     """
-    use 2d backward differentiation to solve the laplace equation
+    use 2d backward differentiation to solve the poisson equation
     """
     # setup heights for matrix
     hx, hy = Lx / (Nx - 1), Ly / (Ny - 1)
@@ -43,7 +43,7 @@ def serial_poisson(Lx, Ly, Nx, Ny, f):
 
 def parallel_poisson(comm, rank, size, Lx, Ly, Nx, Ny, f):
     """
-    use 2d backward differentiation to solve the laplace equation
+    use 2d backward differentiation to solve the poisson equation
     use Schur complement to write the system as [[A11, A12], [A21, A22]]
         - A11 = local interior points
         - A12, A21 = local boundary points
