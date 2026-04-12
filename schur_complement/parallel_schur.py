@@ -13,7 +13,7 @@ def parallel_schur(A, block1_size, block2_size, comm, rank, size):
 
     # some pseudocode \/ not sure
     rows_per_proc = A21.shape[0] // size # split up rows of A21 ?
-    local_result = []
+    columns = []
 
     # divide up into rows
     start_row = rank*rows_per_proc #?? unclear
@@ -24,14 +24,16 @@ def parallel_schur(A, block1_size, block2_size, comm, rank, size):
     for row in range(start_row, end_row + 1):
         # calculate A21 * A11_inv * A12
         column = A21[row-1]*A11_inv*A12
-        local_result.append(column)
+        columns.append(column)
+
+    local_result = np.column_stack(columns)
 
     # make placeholder for global result
     global_result = None
     if rank == 0:
-        global_result = np.zeros((A21.shape[0], A21.shape[1]))
+        global_result = np.empty((A21.shape[0], A21.shape[1]))
 
-    global_result = comm.Gather(local_result, global_result, root=0)
+    global_result = comm.Gather(global_result, global_result, root=0)
 
     if rank == 0:
         global_S = A22 - global_result # should be cheap enough
