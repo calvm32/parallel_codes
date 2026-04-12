@@ -1,5 +1,6 @@
 import numpy as np
 from mpi4py import MPI
+from numpy.linalg import solve
 
 def parallel_schur(A, block1_size, block2_size, comm, rank, size):
     

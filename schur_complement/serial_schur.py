@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.linalg import solve
 
 def serial_schur(A, block1_size, block2_size):
     
