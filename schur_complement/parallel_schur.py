@@ -17,8 +17,22 @@ def parallel_schur(A, block1_size, block2_size, comm, rank, size):
     # divide up into rows
     start_row = rank*rows_per_proc #?? unclear
     end_row = min((rank+1)* rows_per_proc, A21.shape[0])
-    local_result = A21[start_row:end_row] @ X # shape: (num_local_rows, A12.shape[1])
-    local_result_flat = local_result.flatten() # flatten before sending
+    local_result = A21[start_row:end_row] @ X
+    local_result_flat = local_result.flatten()
+    local_count = len(local_result_flat)
+
+    # Gather counts and displacements
+    counts = comm.gather(local_count, root=0)  # number of elements each rank will send
+
+    if rank == 0:
+        displacements = np.insert(np.cumsum(counts[:-1]), 0, 0)
+        global_result_flat = np.empty(sum(counts), dtype=A.dtype)
+    else:
+        displacements = None
+        global_result_flat = None
+
+    # Use Gatherv for variable-length data
+    comm.Gatherv(sendbuf=local_result_flat, recvbuf=(global_result_flat, counts, displacements, MPI.DOUBLE), root=0)
 
     # on root, preallocate flattened array
     if rank == 0:
