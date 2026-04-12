@@ -34,14 +34,6 @@ def parallel_schur(A, block1_size, block2_size, comm, rank, size):
     # Use Gatherv for variable-length data
     comm.Gatherv(sendbuf=local_result_flat, recvbuf=(global_result_flat, counts, displacements, MPI.DOUBLE), root=0)
 
-    # on root, preallocate flattened array
-    if rank == 0:
-        global_result_flat = np.empty(A21.shape[0] * A12.shape[1], dtype=A.dtype)
-    else:
-        global_result_flat = None
-
-    comm.Gather(local_result_flat, global_result_flat, root=0)
-
     if rank == 0:
         global_result = global_result_flat.reshape(A21.shape[0], A12.shape[1])
 
