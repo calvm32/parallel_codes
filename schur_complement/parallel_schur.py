@@ -16,16 +16,8 @@ def parallel_schur(A, block1_size, block2_size, comm, rank, size):
 
     # divide up into rows
     start_row = rank*rows_per_proc #?? unclear
-    end_row = (rank+1)* rows_per_proc
-    if end_row >= A21.shape[0]:
-        end_row = A21.shape[0]
-
-    for row in range(start_row, end_row + 1):
-        # calculate A21 * A11_inv * A12
-        column = A21[row-1]*X
-        columns.append(column)
-
-    local_result = np.array(local_result) # shape: (num_local_rows, A12.shape[1])
+    end_row = min((rank+1)* rows_per_proc, A21.shape[0])
+    local_result = A21[start:end] @ X # shape: (num_local_rows, A12.shape[1])
     local_result_flat = local_result.flatten() # flatten before sending
 
     # on root, preallocate flattened array
