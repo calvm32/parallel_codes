@@ -3,7 +3,7 @@ from mpi4py import MPI
 from numpy.linalg import solve
 from math import ceil
 
-def parallel_schur(A, block1_size, block2_size, comm, rank, size):
+def parallel_schur(comm, rank, size, A, block1_size, block2_size=block1_size):
     
     A11 = A[:block1_size, :block1_size]
     A12 = A[:block1_size, block2_size:]
@@ -42,6 +42,18 @@ def parallel_schur(A, block1_size, block2_size, comm, rank, size):
     else:
         return None
 
+def serial_schur(A, block1_size, block2_size=block1_size):
+    
+    A11 = A[:block1_size, :block1_size]
+    A12 = A[:block1_size, block2_size:]
+    A21 = A[block2_size:, :block1_size]
+    A22 = A[block2_size:, block2_size:]
+    
+    # Schur complement S = A22 - A21*inv(A11)*A12
+    X = solve(A11, A12)
+    S = A22 - A21 @ X
+
+    return S
 
 def main():
 
@@ -61,7 +73,7 @@ def main():
         A = np.random.rand(N, N)
     A = comm.bcast(A, root=0) 
 
-    S = parallel_schur(A, block1_size, block2_size, comm, rank, size)
+    S = parallel_schur(comm, rank, size, A, block1_size, block2_size)
 
     if rank == 0:
         print("parallel Schur complement:\n", S)
