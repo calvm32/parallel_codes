@@ -3,7 +3,7 @@ from mpi4py import MPI
 from numpy.linalg import solve
 from math import ceil
 
-def parallel_schur(comm, rank, size, A, block1_size, block2_size=block1_size):
+def parallel_schur(comm, rank, size, A, block1_size, block2_size):
     
     A11 = A[:block1_size, :block1_size]
     A12 = A[:block1_size, block2_size:]
@@ -42,7 +42,7 @@ def parallel_schur(comm, rank, size, A, block1_size, block2_size=block1_size):
     else:
         return None
 
-def serial_schur(A, block1_size, block2_size=block1_size):
+def serial_schur(A, block1_size, block2_size):
     
     A11 = A[:block1_size, :block1_size]
     A12 = A[:block1_size, block2_size:]
