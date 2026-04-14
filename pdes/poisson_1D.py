@@ -49,39 +49,44 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
     # length between elements
     hx = Lx / (Nx - 1)
 
-    chunk_size = ceil(Nx / size)
+    chunk_size = ceil(Nx / size) # sort of requires Nx >> size
     start = rank * chunk_size
     end = min(start + chunk_size, Nx)
     local_N = end - start - 2 # exclude the two endpoints = interface nodes
     k = size+1
+    xS = np.zeros(2)
 
-    # local interior points
-    if local_N > 0: # need at least 3 points for interior
-        Aii = create_laplacian_matrix(local_N, hx)
-        bi = f[start+1:end-1]
-    else: # trivial chunk 
+    if local_N <= 0:
         Aii = None
         bi = None
-    
-    # -------------------------------
-    # interior/interface interactions
-    # -------------------------------
-    Fi = np.zeros((local_N, 2))
-    if start != 0:
-        Fi[0, 0] = 1.0 / hx**2   # left interface
-    if end != Nx:
-        Fi[-1, 1] = 1.0 / hx**2  # right interface
+        Fi = None
+        Ai_inv_Fi = None
+        Ai_inv_bi = None
+        Si = np.zeros((2,2))
+        zi = np.zeros(2)
+    else:
+        Aii = create_laplacian_matrix(local_N, hx)
+        bi = f[start+1:end-1]
 
-    Ai_inv_Fi = np.linalg.solve(Aii, Fi)
-    Ai_inv_bi = np.linalg.solve(Aii, bi)
+        # -------------------------------
+        # interior/interface interactions
+        # -------------------------------
+        Fi = np.zeros((local_N, 2))
+        if start != 0:
+            Fi[0, 0] = 1.0 / hx**2
+        if end != Nx:
+            Fi[-1, 1] = 1.0 / hx**2
 
-    # -------------------------
-    # solve for interface nodes
-    # -------------------------
-    Ei = Fi.T
-    Si = Ei @ Ai_inv_Fi
-    zi = Ei @ Ai_inv_bi
+        Ai_inv_Fi = np.linalg.solve(Aii, Fi)
+        Ai_inv_bi = np.linalg.solve(Aii, bi)
 
+        # -------------------------
+        # solve for interface nodes
+        # -------------------------
+        Ei = Fi.T
+        Si = Ei @ Ai_inv_Fi
+        zi = Ei @ Ai_inv_bi
+        
     # sum interface node solutions globally
     S_global = comm.allreduce(Si, op=MPI.SUM)
     z_global = comm.allreduce(zi, op=MPI.SUM)
@@ -106,26 +111,25 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
         for i_local, i_global in enumerate([rank, rank+1]):
             z_global[i_global] += zi[i_local]
 
-        # reduce across ranks
-        S_global = comm.allreduce(S_global, op=MPI.SUM)
-        z_global = comm.allreduce(z_global, op=MPI.SUM)
-
         S = C - S_global
         z = bS - z_global
         xS = np.linalg.solve(S, z)
-        print(xS)
 
-    xS = np.zeros(2)
     xS = comm.bcast(xS, root=0)
 
     xS_local = np.array([xS[rank], xS[rank+1]])
     local_u = Ai_inv_bi - Ai_inv_Fi@xS_local
 
     # gather solns
-    global_u = None
+    counts = comm.gather(len(local_u), root=0)
+
     if rank == 0:
-        global_u = np.zeros(Nx)
-    comm.Gather(local_u, global_u, root=0)
+        displs = np.cumsum([0] + counts[:-1])
+        global_u = np.zeros(sum(counts))
+    else:
+        displs = None
+
+    comm.Gatherv(local_u, (global_u, counts, displs, MPI.DOUBLE), root=0)
 
     return global_u
 
