@@ -10,6 +10,9 @@ with Dirichlet boundary conditions
 
 # set up laplacian matrix
 def create_laplacian_matrix(Nx, hx):
+    """
+    1D backwards differentiation tridiagonal matrix
+    """
     A = -2 * np.eye(Nx) + np.diag(np.ones(Nx-1), 1) + np.diag(np.ones(Nx-1), -1)
     A /= hx**2 # scale by the grid spacing^2
 
@@ -63,12 +66,11 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
         bi = f[start:end]
 
     # treat boundaries as interface nodes for now
-    Fi_left = np.zeros(local_N)
-    Fi_right = np.zeros(local_N)
+    Fi = np.zeros(local_N)
     if start != 0:
-        Fi_left[0] = 1.0 / hx**2
+        Fi[0] = 1.0 / hx**2
     if end != Nx:
-        Fi_right[-1] = 1.0 / hx**2
+        Fi[-1] = 1.0 / hx**2
 
     Ai_inv_Fi = np.linalg.solve(Aii, Fi)
     Ai_inv_bi = np.linalg.solve(Aii, bi)
