@@ -53,6 +53,7 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
     start = rank * chunk_size
     end = min(start + chunk_size, Nx)
     local_N = end - start - 2 # exclude the two endpoints = interface nodes
+    k = size+1
 
     # local interior points
     if local_N > 0: # need at least 3 points for interior
@@ -90,21 +91,50 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
     # ------------------------
     if rank == 0:
         # interface bookkeeping
-        C = np.zeros((size+1, size+1))
-        bS = np.zeros(size+1)
+        C = np.zeros((k, k))
+        bS = np.zeros(k)
+
+        S_global = np.zeros((k, k))
+        z_global = np.zeros(k)
+        
+        # local contribution
+        rows = [rank, rank+1]
+        for i_local, i_global in enumerate(rows):
+            for j_local, j_global in enumerate(rows):
+                S_global[i_global, j_global] += Si[i_local, j_local]
+
+        for i_local, i_global in enumerate([rank, rank+1]):
+            z_global[i_global] += zi[i_local]
+
+        # reduce across ranks
+        S_global = comm.allreduce(S_global, op=MPI.SUM)
+        z_global = comm.allreduce(z_global, op=MPI.SUM)
 
         S = C - S_global
         z = bS - z_global
         xS = np.linalg.solve(S, z)
 
     xS = comm.bcast(xS, root=0)
-    local_u = Ai_inv_bi - Ai_inv_Fi@xS
+    xS_local = np.array([xS[rank], xS[rank+1]])
+    local_u = Ai_inv_bi - Ai_inv_Fi@xS_local
 
     # gather solns
     global_u = None
     if rank == 0:
         global_u = np.zeros(Nx)
     comm.Gather(local_u, global_u, root=0)
+
+    k = size + 1
+    S_global = np.zeros((k, k))
+
+    # local contribution
+    rows = [rank, rank+1]
+    for i_local, i_global in enumerate(rows):
+        for j_local, j_global in enumerate(rows):
+            S_global[i_global, j_global] += Si[i_local, j_local]
+
+    # reduce across ranks
+    S_global = comm.allreduce(S_global, op=MPI.SUM)
 
     return global_u
 
@@ -137,8 +167,9 @@ def main():
 
     if rank == 0:
         x = np.linspace(0, Lx, Nx)
-        plt.plot(x, u_parallel, label='Parallel (local solves)')
+        plt.plot(x, u_parallel, label='Parallel')
         plt.plot(x, u_serial, '--', label='Serial')
+        plt.plot(x, abs(u_serial - u_parallel), '--', label='Error')
         plt.xlabel('x')
         plt.ylabel('u(x)')
         plt.title('1D Poisson equation')
