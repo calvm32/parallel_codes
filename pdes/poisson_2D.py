@@ -23,7 +23,7 @@ def serial_poisson(Lx, Ly, Nx, Ny, f):
     """
     use 2d backward differentiation to solve the poisson equation
     """
-    # setup heights for matrix
+    # length between elements
     hx, hy = Lx / (Nx - 1), Ly / (Ny - 1)
 
     x = np.linspace(0, Lx, Nx)
@@ -49,7 +49,7 @@ def parallel_poisson(comm, rank, size, Lx, Ly, Nx, Ny, f):
         - A12, A21 = local boundary points
         - A22 = neighboring points
     """
-    # setup heights for matrix
+    # length between elements
     hx, hy = Lx / (Nx - 1), Ly / (Ny - 1)
 
     # local grid size
@@ -60,7 +60,7 @@ def parallel_poisson(comm, rank, size, Lx, Ly, Nx, Ny, f):
     # create A11 and solve A11*u_i = f_i
     local_A = create_laplacian_matrix(end_x - start_x, Ny, hx, hy)
     local_f = f[start_x:end_x, :].flatten()
-    local_u = np.linalg.solve(local_A, local_f)
+    local_u = np.linalg.solve(local_A, local_f).reshape(end_x - start_x, Ny)
     
     # update boundaries A12, A21
     if rank < size - 1: # all but final rank updates next
@@ -75,9 +75,7 @@ def parallel_poisson(comm, rank, size, Lx, Ly, Nx, Ny, f):
 
     print(neighbor_data)
 
-    # After computing the interior solution, apply Schur complement to update boundary terms
-    # Schur complement updates the boundary: u_b = A22^-1 * A21 * u_i
-    # (You would need to set up A21 and A22, which come from the communication step)
+    # setup A21 and A12??
 
     # gather solns
     global_u = None
@@ -120,7 +118,7 @@ def main():
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('u(x, y)')
-    ax.set_title('Solution to Poisson equation')
+    ax.set_title('Solution to 2D Poisson equation')
 
     plt.show()
 

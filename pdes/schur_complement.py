@@ -42,6 +42,18 @@ def parallel_schur(comm, rank, size, A, block1_size, block2_size):
     else:
         return None
 
+def parallel_iterative_schur(comm, rank, size, A, block_size_list):
+
+    for i in block_size_list:
+
+        block1_size = block_size_list[i]
+        block2_size = A.shape[0] - block1_size
+        S -= parallel_schur(comm, rank, size, A, block1_size, block2_size)
+
+        A_slice = A[:block1_size, :block1_size]
+        A = A_slice
+
+
 def serial_schur(A, block1_size, block2_size):
     
     A11 = A[:block1_size, :block1_size]
