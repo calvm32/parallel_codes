@@ -127,18 +127,6 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
         global_u = np.zeros(Nx)
     comm.Gather(local_u, global_u, root=0)
 
-    k = size + 1
-    S_global = np.zeros((k, k))
-
-    # local contribution
-    rows = [rank, rank+1]
-    for i_local, i_global in enumerate(rows):
-        for j_local, j_global in enumerate(rows):
-            S_global[i_global, j_global] += Si[i_local, j_local]
-
-    # reduce across ranks
-    S_global = comm.allreduce(S_global, op=MPI.SUM)
-
     return global_u
 
 def main():
