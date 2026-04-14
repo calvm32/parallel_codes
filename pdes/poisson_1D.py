@@ -97,7 +97,7 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
         S_global = np.zeros((k, k))
         z_global = np.zeros(k)
         
-        # local contribution
+        # piece S and z back from local contributions
         rows = [rank, rank+1]
         for i_local, i_global in enumerate(rows):
             for j_local, j_global in enumerate(rows):
@@ -113,8 +113,8 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
         S = C - S_global
         z = bS - z_global
         xS = np.linalg.solve(S, z)
-
-    xS = comm.bcast(xS, root=0)
+        xS = comm.bcast(xS, root=0)
+        
     xS_local = np.array([xS[rank], xS[rank+1]])
     local_u = Ai_inv_bi - Ai_inv_Fi@xS_local
 
