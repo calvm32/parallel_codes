@@ -114,6 +114,7 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
         z = bS - z_global
         xS = np.linalg.solve(S, z)
         print(xS)
+        
     xS = comm.bcast(xS, root=0)
 
     xS_local = np.array([xS[rank], xS[rank+1]])
