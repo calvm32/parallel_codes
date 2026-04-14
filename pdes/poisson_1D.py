@@ -76,7 +76,7 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
     Ai_inv_bi = np.linalg.solve(Aii, bi)
 
     # solve for interface nodes
-    Ei = Fi.t
+    Ei = Fi.T
     Si = Ei @ Ai_inv_Fi
     zi = Ei @ Ai_inv_bi
 
