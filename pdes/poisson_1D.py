@@ -10,10 +10,8 @@ with Dirichlet boundary conditions
 
 # set up laplacian matrix
 def create_laplacian_matrix(Nx, hx):
-    Ax = -2 * np.eye(Nx) + np.diag(np.ones(Nx-1), 1) + np.diag(np.ones(Nx-1), -1)
-    Ax /= hx**2 # scale by the grid spacing^2
-    I_Nx = np.eye(Nx)
-    A = np.kron(I_Ny, Ax)
+    A = -2 * np.eye(Nx) + np.diag(np.ones(Nx-1), 1) + np.diag(np.ones(Nx-1), -1)
+    A /= hx**2 # scale by the grid spacing^2
 
     return A
 
