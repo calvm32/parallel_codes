@@ -49,33 +49,34 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
     # length between elements
     hx = Lx / (Nx - 1)
 
-    # local grid size
     chunk_size = ceil(Nx / size)
     start = rank * chunk_size
     end = min(start + chunk_size, Nx)
     local_N = end - start - 2 # exclude the two endpoints = interface nodes
-    block_size_list = [] # to perform parallel Schur
-    C = [0] # final block
-    
+
     # local interior points
     if local_N > 0: # need at least 3 points for interior
         Aii = create_laplacian_matrix(local_N, hx)
-        bi = f[start:end-2]
-    else: # small chunk -> just return f
-        Aii = np.array([[1]])
-        bi = f[start:end]
-
-    # interface + interior interaction matrices
-    Fi = np.zeros(local_N)
+        bi = f[start+1:end-1]
+    else: # trivial chunk 
+        Aii = None
+        bi = None
+    
+    # -------------------------------
+    # interior/interface interactions
+    # -------------------------------
+    Fi = np.zeros((local_N, 2))
     if start != 0:
-        Fi[0] = 1.0 / hx**2
+        Fi[0, 0] = 1.0 / hx**2   # left interface
     if end != Nx:
-        Fi[-1] = 1.0 / hx**2
+        Fi[-1, 1] = 1.0 / hx**2  # right interface
 
     Ai_inv_Fi = np.linalg.solve(Aii, Fi)
     Ai_inv_bi = np.linalg.solve(Aii, bi)
 
+    # -------------------------
     # solve for interface nodes
+    # -------------------------
     Ei = Fi.T
     Si = Ei @ Ai_inv_Fi
     zi = Ei @ Ai_inv_bi
@@ -84,12 +85,18 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
     S_global = comm.allreduce(Si, op=MPI.SUM)
     z_global = comm.allreduce(zi, op=MPI.SUM)
 
-    S = C - S_global
-    z = bS - z_global
-
+    # ------------------------
     # solve for interior nodes
+    # ------------------------
     if rank == 0:
+        # interface bookkeeping
+        C = np.zeros((size+1, size+1))
+        bS = np.zeros(size+1)
+
+        S = C - S_global
+        z = bS - z_global
         xS = np.linalg.solve(S, z)
+
     xS = comm.bcast(xS, root=0)
     local_u = Ai_inv_bi - Ai_inv_Fi@xS
 
