@@ -100,11 +100,11 @@ def main():
     Nx, Ny = 50, 50 # number of pts
 
     # source term
-    f = np.zeros((Nx, Ny))
+    f = np.ones((Nx, Ny))
     f[int(Nx/4), int(Ny/4)] = 100 # Adding a point source at (1/4, 1/4)
 
     u = serial_poisson(Lx, Ly, Nx, Ny, f)
-    u = parallel_poisson(comm, rank, size, Lx, Ly, Nx, Ny, f)
+    #u = parallel_poisson(comm, rank, size, Lx, Ly, Nx, Ny, f)
 
     # --------
     # plotting

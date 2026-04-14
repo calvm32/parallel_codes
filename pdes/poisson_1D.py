@@ -60,12 +60,12 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
     # local interior points
     if local_N > 0: # need at least 3 points for interior
         Aii = create_laplacian_matrix(local_N, hx)
-        bi = f[start-1:end-1]
+        bi = f[start:end-2]
     else: # small chunk -> just return f
         Aii = np.array([[1]])
         bi = f[start:end]
 
-    # treat boundaries as interface nodes for now
+    # interface + interior interaction matrices
     Fi = np.zeros(local_N)
     if start != 0:
         Fi[0] = 1.0 / hx**2
@@ -115,7 +115,7 @@ def main():
     Nx = 50 # number of pts
 
     # source term
-    f = np.zeros(Nx)
+    f = np.ones(Nx)
 
     if rank == 0: # serial solution for comparison
         u_serial = serial_poisson(Lx, Nx, f)
