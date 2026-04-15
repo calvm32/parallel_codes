@@ -72,8 +72,9 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
     b_local = f[start:end].copy()
 
     # ------------------------
-    # LOCAL interface handling
+    # LOCAL interface indexing
     # ------------------------
+
     S_local_idx = []
     S_global_idx = []
 
@@ -95,8 +96,8 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
     # ------------
 
     Aii = A_local[np.ix_(I_local_idx, I_local_idx)]
-    Fi  = A_local[np.ix_(I_local_idx, S_local_idx)]
-    Ei  = A_local[np.ix_(S_local_idx, I_local_idx)]
+    Fi = A_local[np.ix_(I_local_idx, S_local_idx)]
+    Ei = A_local[np.ix_(S_local_idx, I_local_idx)]
     Cii = A_local[np.ix_(S_local_idx, S_local_idx)]
 
     bi = b_local[I_local_idx]
@@ -108,17 +109,29 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
     Si = Cii - Ei @ Ai_inv_Fi
     zi = bS_local - Ei @ Ai_inv_bi
 
-    # mash together contributions and combine them globally
-    S_contrib = np.zeros((Nx, Nx))
-    z_contrib = np.zeros(Nx)
+    # mash together localutions and combine them globally
+    k = size + 1
 
-    for local_i, global_i in enumerate(S_global_idx):
-        z_contrib[global_i] += zi[local_i]
-        for local_j, global_j in enumerate(S_global_idx):
-            S_contrib[global_i, global_j] += Si[local_i, local_j]
+    S_local = np.zeros((k, k))
+    z_local = np.zeros(k)
 
-    S_global = comm.allreduce(S_contrib, op=MPI.SUM)
-    z_global = comm.allreduce(z_contrib, op=MPI.SUM)
+    if start != 0:
+        left = rank
+        S_local[left, left] += Si[0,0]
+        z_local[left] += zi[0]
+
+    if end != Nx:
+        right = rank + 1
+        S_local[right, right] += Si[-1,-1]
+        z_local[right] += zi[-1]
+
+        # coupling if both interfaces exist
+        if start != 0:
+            S_local[left, right] += Si[0,-1]
+            S_local[right, left] += Si[-1,0]
+
+    S_global = comm.allreduce(S_local, op=MPI.SUM)
+    z_global = comm.allreduce(z_local, op=MPI.SUM)
 
     # ------------------
     # solve Schur system
