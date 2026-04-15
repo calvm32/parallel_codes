@@ -65,17 +65,17 @@ parameters = {
 
     # velocity block: approximate the inverse of thevector laplacian using a single multigrid V-cycle.::
     "fieldsplit_0_ksp_type": "preonly",                         # apply preconditioner ONCE (no krylov iterations)
-    "fieldsplit_0_pc_type": "python",                           # allows preconditioner directly from python code (we'll offload the work to firedrake)
+    "fieldsplit_0_pc_type": "python",                           # allows preconditioner directly from python code (we'll offload firedrake)
     "fieldsplit_0_pc_python_type": "firedrake.AssembledPC",     # constructs pc by assembling sparse matrix and 
-    "fieldsplit_0_assembled_pc_type": "hypre",                  # Hypre algebraic multigrid processor is applied to **assembled operators** rather than matfree forms
+    "fieldsplit_0_assembled_pc_type": "hypre",                  # Hypre = "algebraic multigrid processor" for assembled only, not matfree
 
     # schur complement block: approximate the inverse of the schur complement w/ a pressure mass inverse
     "fieldsplit_1_ksp_type": "preonly",                         # apply preconditioner ONCE (no krylov iterations)
-    "fieldsplit_1_pc_type": "python",                           # allows preconditioner directly from python code (we'll offload the work to firedrake)
+    "fieldsplit_1_pc_type": "python",                           # allows preconditioner directly from python code (we'll offload to firedrake)
     "fieldsplit_1_pc_python_type": "firedrake.MassInvPC",       # inverts the mass matrix in the provided space, used to handle viscosity
 
-    # The mass inverse is dense, and therefore approximated with ILU
-    "fieldsplit_1_Mp_mat_type": "aij",                          # general sparse (parallel) matrix w/ info about "adjacent rows w/ identical nonzero structure"
+    # the mass inverse is dense, thus approximated with ILU
+    "fieldsplit_1_Mp_mat_type": "aij",                          # general sparse matrix w/ info about "adjacent rows w/ identical nonzero structure"
     "fieldsplit_1_Mp_pc_type": "ilu"                            # incomplete LU factorization
  }
 
