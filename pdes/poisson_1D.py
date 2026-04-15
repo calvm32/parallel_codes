@@ -210,13 +210,13 @@ def main():
         u_serial = serial_poisson(Lx, Nx, f)
         print("Serial solution:", u_serial)
 
+    u_parallel = parallel_poisson(comm, rank, size, Lx, Nx, f)
+
     # --------
     # plotting
     # --------
 
     if rank == 0:
-        u_parallel = parallel_poisson(comm, rank, size, Lx, Nx, f)
-
         x = np.linspace(0, Lx, Nx)
         plt.plot(x, u_parallel, label='Parallel')
         plt.plot(x, u_serial, '--', label='Serial')
