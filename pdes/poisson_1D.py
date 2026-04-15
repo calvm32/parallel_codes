@@ -122,10 +122,25 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
         for i_local, i_global in enumerate([rank, rank+1]):
             z_global[i_global] += zi[i_local]
 
-        S = C - S_global
-        z = bS - z_global
-        xS = np.linalg.solve(S, z)
+        # S = C - S_global
+        # z = bS - z_global
 
+        # Dirichlet BCs
+        S = -S_global.copy()
+        z = -z_global.copy()
+
+        # enforce u(0) = 0
+        S[0, :] = 0
+        S[0, 0] = 1
+        z[0] = 0
+
+        # enforce u(L) = 0
+        S[-1, :] = 0
+        S[-1, -1] = 1
+        z[-1] = 0
+
+        xS = np.linalg.solve(S, z)
+        
     xS = comm.bcast(xS, root=0)
 
     xS_local = np.array([xS[rank], xS[rank+1]])
