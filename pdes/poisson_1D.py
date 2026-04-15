@@ -117,7 +117,7 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
             if i < k-1:
                 C[i, i+1] = 1.0 / hx**2
 
-        S = C - S_global
+        S = - S_global
         z = -z_global
 
         # Dirichlet BCs
