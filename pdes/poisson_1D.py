@@ -88,10 +88,22 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
         Si = Ei @ Ai_inv_Fi
         zi = Ei @ Ai_inv_bi
         
-    # sum interface node solutions globally
-    S_global = comm.allreduce(Si, op=MPI.SUM)
-    z_global = comm.allreduce(zi, op=MPI.SUM)
-    print(f"Rank {rank}: S_global = {S_global}")
+    # piece together interface node solutions globally
+    S_contrib = np.zeros((k, k))
+    z_contrib = np.zeros(k)
+
+    rows = [rank, rank+1]
+
+    for i_local, i_global in enumerate(rows):
+        for j_local, j_global in enumerate(rows):
+            S_contrib[i_global, j_global] = Si[i_local, j_local]
+
+    for i_local, i_global in enumerate(rows):
+        z_contrib[i_global] = zi[i_local]
+
+    # now sum properly across processes
+    S_global = comm.allreduce(S_contrib, op=MPI.SUM)
+    z_global = comm.allreduce(z_contrib, op=MPI.SUM)
 
     # ------------------------
     # solve for interior nodes
