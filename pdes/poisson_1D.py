@@ -56,7 +56,7 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
     k = size+1
     xS = np.zeros(2)
 
-    if local_N <= 0:
+    if local_N <= 0: #bookkeeping for trivial blocks, altho try not to let those happen
         Aii = None
         bi = None
         Fi = None
