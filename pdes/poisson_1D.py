@@ -74,9 +74,9 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
         # -------------------------------
         Fi = np.zeros((local_N, 2))
         if start != 0:
-            Fi[0, 0] = 1.0 / hx**2
+            Fi[0, 0] = -1.0 / hx**2
         if end != Nx:
-            Fi[-1, 1] = 1.0 / hx**2
+            Fi[-1, 1] = -1.0 / hx**2
 
         Ai_inv_Fi = np.linalg.solve(Aii, Fi)
         Ai_inv_bi = np.linalg.solve(Aii, bi)
@@ -110,6 +110,13 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
     # ------------------------
     if rank == 0:
         C = np.zeros((k, k))
+
+        for i in range(k):
+            C[i, i] = -2.0 / hx**2
+            if i > 0:
+                C[i, i-1] = 1.0 / hx**2
+            if i < k-1:
+                C[i, i+1] = 1.0 / hx**2
 
         S = C - S_global
         z = -z_global
