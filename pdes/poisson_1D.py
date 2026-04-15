@@ -55,7 +55,6 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
     local_N = end - start - 2 # exclude the two endpoints = interface nodes
     k = size+1
     xS = np.zeros(2)
-    #print(f"Rank {rank}: local_N = {local_N}")
 
     if local_N <= 0: #bookkeeping for trivial blocks, altho try not to let those happen
         Aii = None
@@ -74,9 +73,9 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
         # -------------------------------
         Fi = np.zeros((local_N, 2))
         if start != 0:
-            Fi[0, 0] = -1.0 / hx**2
+            Fi[0, 0] = 1.0 / hx**2
         if end != Nx:
-            Fi[-1, 1] = -1.0 / hx**2
+            Fi[-1, 1] = 1.0 / hx**2
 
         Ai_inv_Fi = np.linalg.solve(Aii, Fi)
         Ai_inv_bi = np.linalg.solve(Aii, bi)
