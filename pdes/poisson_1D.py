@@ -140,7 +140,7 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
         z[-1] = 0
 
         xS = np.linalg.solve(S, z)
-        
+
     xS = comm.bcast(xS, root=0)
 
     xS_local = np.array([xS[rank], xS[rank+1]])
@@ -154,6 +154,7 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
         displs = np.cumsum([0] + counts[:-1])
         global_u = np.zeros(sum(counts))
     else:
+        global_u = None
         displs = None
 
     comm.Gatherv(local_u, (global_u, counts, displs, MPI.DOUBLE), root=0)
