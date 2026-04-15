@@ -111,13 +111,6 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
     if rank == 0:
         C = np.zeros((k, k))
 
-        for i in range(k):
-            C[i, i] = -2.0 / hx**2
-            if i > 0:
-                C[i, i-1] = 1.0 / hx**2
-            if i < k-1:
-                C[i, i+1] = 1.0 / hx**2
-
         S = C - S_global
         z = -z_global
 
