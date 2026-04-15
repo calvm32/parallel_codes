@@ -100,9 +100,6 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
         # interface bookkeeping
         C = np.zeros((k, k))
         bS = np.zeros(k)
-
-        S_global = np.zeros((k, k))
-        z_global = np.zeros(k)
         
         # piece S and z back from local contributions
         rows = [rank, rank+1]
