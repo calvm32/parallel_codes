@@ -109,32 +109,23 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
     # solve for interior nodes
     # ------------------------
     if rank == 0:
-        # interface bookkeeping
         C = np.zeros((k, k))
-        bS = np.zeros(k)
-        
-        # piece S and z back from local contributions
-        rows = [rank, rank+1]
-        for i_local, i_global in enumerate(rows):
-            for j_local, j_global in enumerate(rows):
-                S_global[i_global, j_global] += Si[i_local, j_local]
 
-        for i_local, i_global in enumerate([rank, rank+1]):
-            z_global[i_global] += zi[i_local]
+        for i in range(k):
+            C[i, i] = -2.0 / hx**2
+            if i > 0:
+                C[i, i-1] = 1.0 / hx**2
+            if i < k-1:
+                C[i, i+1] = 1.0 / hx**2
 
-        # S = C - S_global
-        # z = bS - z_global
+        S = C - S_global
+        z = -z_global
 
         # Dirichlet BCs
-        S = -S_global.copy()
-        z = -z_global.copy()
-
-        # enforce u(0) = 0
         S[0, :] = 0
         S[0, 0] = 1
         z[0] = 0
 
-        # enforce u(L) = 0
         S[-1, :] = 0
         S[-1, -1] = 1
         z[-1] = 0
@@ -208,7 +199,7 @@ def main():
 
     if rank == 0: # serial solution for comparison
         u_serial = serial_poisson(Lx, Nx, f)
-        print("Serial solution:", u_serial)
+        #print("Serial solution:", u_serial)
 
     u_parallel = parallel_poisson(comm, rank, size, Lx, Nx, f)
 
