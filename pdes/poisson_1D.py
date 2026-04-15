@@ -55,6 +55,7 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
     local_N = end - start - 2 # exclude the two endpoints = interface nodes
     k = size+1
     xS = np.zeros(2)
+    print(f"Rank {rank}: local_N = {local_N}")
 
     if local_N <= 0: #bookkeeping for trivial blocks, altho try not to let those happen
         Aii = None
@@ -90,6 +91,7 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
     # sum interface node solutions globally
     S_global = comm.allreduce(Si, op=MPI.SUM)
     z_global = comm.allreduce(zi, op=MPI.SUM)
+    print(f"Rank {rank}: S_global = {S_global}")
 
     # ------------------------
     # solve for interior nodes
@@ -119,6 +121,7 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
 
     xS_local = np.array([xS[rank], xS[rank+1]])
     local_u = Ai_inv_bi - Ai_inv_Fi@xS_local
+    print(f"Rank {rank}: local_u = {local_u}")
 
     # gather solns
     counts = comm.gather(len(local_u), root=0)
