@@ -152,14 +152,42 @@ def parallel_poisson(comm, rank, size, Lx, Nx, f):
 
     if rank == 0:
         displs = np.cumsum([0] + counts[:-1])
-        global_u = np.zeros(sum(counts))
+        global_u_interior = np.zeros(sum(counts))
     else:
-        global_u = None
+        global_u_interior = None
         displs = None
 
-    comm.Gatherv(local_u, (global_u, counts, displs, MPI.DOUBLE), root=0)
+    comm.Gatherv(local_u, (global_u_interior, counts, displs, MPI.DOUBLE), root=0)
 
-    return global_u
+    if rank == 0:
+        u_full = np.zeros(Nx)
+
+        # recompute chunk layout
+        chunk_size = ceil(Nx / size)
+
+        interior_idx = 0
+
+        for r in range(size):
+            start = r * chunk_size
+            end = min(start + chunk_size, Nx)
+
+            # interface nodes
+            left_interface = start
+            right_interface = end - 1
+
+            # set left interface (only once!)
+            if r == 0:
+                u_full[left_interface] = xS[r]
+
+            # fill interior nodes
+            local_len = counts[r]
+            u_full[start+1:end-1] = global_u_interior[interior_idx:interior_idx+local_len]
+            interior_idx += local_len
+
+            # set right interface
+            u_full[right_interface] = xS[r+1]
+
+        return u_full
 
 def main():
 
@@ -182,13 +210,13 @@ def main():
         u_serial = serial_poisson(Lx, Nx, f)
         print("Serial solution:", u_serial)
 
-    u_parallel = parallel_poisson(comm, rank, size, Lx, Nx, f)
-
     # --------
     # plotting
     # --------
 
     if rank == 0:
+        u_parallel = parallel_poisson(comm, rank, size, Lx, Nx, f)
+
         x = np.linspace(0, Lx, Nx)
         plt.plot(x, u_parallel, label='Parallel')
         plt.plot(x, u_serial, '--', label='Serial')
